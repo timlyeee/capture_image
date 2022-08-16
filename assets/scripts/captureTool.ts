@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, RenderTexture, director, Director, Camera } from 'cc';
+import { _decorator, Component, Node, RenderTexture, director, Director, Camera, native } from 'cc';
 import { HTML5, NATIVE, PREVIEW } from 'cc/env';
 const { ccclass, property } = _decorator;
 
@@ -96,10 +96,11 @@ export class captureTool extends Component {
 
                 });
             } else if (NATIVE) {
+
                 let fileName = 'capture.png';
-                let filePath = jsb.fileUtils.getWritablePath();
+                let filePath = native.fileUtils.getWritablePath();
                 let fullFileName = filePath + fileName;
-                jsb.fileUtils.writeDataToFile(data, fullFileName);
+                native.fileUtils.writeDataToFile(data, fullFileName);
             }  
         });
     }
