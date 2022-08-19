@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, RenderTexture, director, Director, Camera, native } from 'cc';
+import { _decorator, Component, Node, RenderTexture, director, Director, Camera, native, renderer, Label, Root } from 'cc';
 import { HTML5, NATIVE, PREVIEW } from 'cc/env';
 const { ccclass, property } = _decorator;
 
@@ -6,8 +6,17 @@ const { ccclass, property } = _decorator;
 export class captureTool extends Component {
     public _width;
     public _height;
+    public shouldFlip: boolean;
+    @property(Label)
+    public label : Label | null = null;
     start() {
-
+        let caps =  director.root.device.capabilities;
+        let info = `clip space minz : ${caps.clipSpaceMinZ}, clip space signY: ${caps.clipSpaceSignY} screenSpaceSignY: ${caps.screenSpaceSignY}`;
+        console.log(info);
+        this.label.string = info;
+        if (caps.clipSpaceSignY == 1) {
+            this.shouldFlip = true;
+        }
     }
 
     update(deltaTime: number) {
@@ -43,7 +52,10 @@ export class captureTool extends Component {
                 cameras.forEach((camera: any) => {
                     camera.targetTexture = null;
                 });
-                const pixelData = renderTexture.readPixels();
+                let pixelData = renderTexture.readPixels();
+                if (this.shouldFlip) {
+                    pixelData = this.flipImage(pixelData);
+                }
                 // renderTexture.destroy();
                 resolve(pixelData);
             }
@@ -72,13 +84,12 @@ export class captureTool extends Component {
         const imageData = this.captureWholeScreen();
         imageData.then((data) => {
             if (PREVIEW || HTML5) {
-                let newData = this.flipImage(data);
                 const canvas = document.createElement("canvas");
                 canvas.width = screen.width;
                 canvas.height = screen.height;
                 const context = canvas.getContext("2d");
                 let imageData = context.createImageData(this._width, this._height);
-                imageData.data.set(newData);
+                imageData.data.set(data);
                 context.putImageData(imageData, 0, 0);
                 canvas.toBlob((blob) => {
                     let newImage = document.createElement("img");
@@ -96,12 +107,27 @@ export class captureTool extends Component {
 
                 });
             } else if (NATIVE) {
-
+                console.log("Capture image on native");
                 let fileName = 'capture.png';
                 let filePath = native.fileUtils.getWritablePath();
                 let fullFileName = filePath + fileName;
-                native.fileUtils.writeDataToFile(data, fullFileName);
+                native.saveImageData(data, this._width, this._height, fullFileName, (isSuccess: boolean)=>{
+                    if (isSuccess) {
+                        console.log("save success");
+                    } else {
+                        console.log("save fail");
+                    }
+                });
+                native.saveImageData(data, this._width, this._height, filePath+'captureJpg.jpg', (isSuccess: boolean)=>{
+                    if (isSuccess) {
+                        console.log("save success");
+                    } else {
+                        console.log("save fail");
+                    }
+                });
             }  
+        }).catch((err)=>{
+            console.log(err);
         });
     }
 
