@@ -1,4 +1,4 @@
-import { _decorator, Component, Node, RenderTexture, director, Director, Camera, native, renderer, Label, Root } from 'cc';
+import { _decorator, Component, Node, RenderTexture, director, Director, Camera, native, renderer, Label, Root, Sprite, SpriteFrame, resources, assetManager, ImageAsset, Texture2D, Light, Color } from 'cc';
 import { HTML5, NATIVE, PREVIEW } from 'cc/env';
 const { ccclass, property } = _decorator;
 
@@ -9,6 +9,12 @@ export class captureTool extends Component {
     public shouldFlip: boolean;
     @property(Label)
     public label : Label | null = null;
+    @property(Sprite)
+    public sprite : Sprite | null = null;
+    @property(Light)
+    public mainLight: Light | null = null;
+    @property(Camera)
+    public cam: Camera | null = null;
     start() {
         let caps =  director.root.device.capabilities;
         let info = `clip space minz : ${caps.clipSpaceMinZ}, clip space signY: ${caps.clipSpaceSignY} screenSpaceSignY: ${caps.screenSpaceSignY}`;
@@ -108,17 +114,18 @@ export class captureTool extends Component {
                 });
             } else if (NATIVE) {
                 console.log("Capture image on native");
-                let fileName = 'capture.png';
-                let filePath = native.fileUtils.getWritablePath();
-                let fullFileName = filePath + fileName;
-                native.saveImageData(data, this._width, this._height, fullFileName, (isSuccess: boolean)=>{
+                let filePath = native.fileUtils.getWritablePath();;
+                native.saveImageData(data, this._width, this._height, filePath+'capture.png', (isSuccess: boolean)=>{
                     if (isSuccess) {
                         console.log("save success");
+                        this.setSpriteFrameWithImage(filePath+'capture.png');
+                        this.cam.clearColor = Color.BLUE;
+                        this.mainLight.color = Color.BLUE;
                     } else {
                         console.log("save fail");
                     }
                 });
-                native.saveImageData(data, this._width, this._height, filePath+'captureJpg.jpg', (isSuccess: boolean)=>{
+                native.saveImageData(data, this._width, this._height, filePath+'capture.jpg', (isSuccess: boolean)=>{
                     if (isSuccess) {
                         console.log("save success");
                     } else {
@@ -129,7 +136,20 @@ export class captureTool extends Component {
         }).catch((err)=>{
             console.log(err);
         });
+        
+    }
+
+    setSpriteFrameWithImage(imagePath: string) {
+        const spriteFrame = this.sprite.spriteFrame!;
+        assetManager.loadRemote(imagePath, (err, image: ImageAsset)=>{
+            const sp = new SpriteFrame();
+            var t2d = new Texture2D();
+            t2d.image = image;
+            sp.texture = t2d;
+            this.sprite.spriteFrame = sp;
+            console.log("Load success");
+        });
+
     }
 
 }
-
